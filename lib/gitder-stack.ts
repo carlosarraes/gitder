@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 export class GitderStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -11,6 +12,14 @@ export class GitderStack extends cdk.Stack {
       memorySize: 1024,
       timeout: cdk.Duration.seconds(10),
     });
+
+    const secret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      "ImportedSecret",
+      "GITHUB_KEY",
+    );
+
+    secret.grantRead(dockerFunc);
 
     const functionUrl = dockerFunc.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,

@@ -9,3 +9,8 @@ cdk.out
 
 # server
 server/env
+server/.env
+
+# pycache
+__pycache__/
+
