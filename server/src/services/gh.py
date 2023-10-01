@@ -1,6 +1,8 @@
 import asyncio
+import os
 
 import httpx
+from src.dao.repos import ReposDAO
 from src.models.repo import Repos
 
 
@@ -11,25 +13,14 @@ class GitHubService:
             "Accept": "application/vnd.github.v3+json",
             "X-GitHub-Api-Version": "2022-11-28",
         }
+        self.dao = ReposDAO(os.environ.get("DYNAMO_TABLE_NAME", "default_table_name"))
 
     @staticmethod
     def _get_repo_language_url(url: str, full_name: str) -> str:
         return f"{url}/repos/{full_name}/languages"
 
-    async def get_repos(self, username: str) -> list[Repos]:
-        request_url = f"{self.baseURL}/users/{username}/repos?sort=created&per_page=100"
-
+    async def _get_languages(self, repos: list[Repos]) -> list[Repos]:
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                request_url,
-                headers=self.headers,
-            )
-            response.raise_for_status()
-
-            repos = [
-                Repos.from_dict(repo) for repo in response.json() if repo["size"] >= 100
-            ]
-
             language_responses = await asyncio.gather(
                 *[
                     client.get(
@@ -45,3 +36,24 @@ class GitHubService:
                 repo.languages = language_response.json()
 
             return repos
+
+    async def get_repos(self, username: str) -> list[Repos]:
+        request_url = f"{self.baseURL}/users/{username}/repos?sort=created&per_page=100"
+
+        if saved_repos := self.dao.get_user_repos(username):
+            return saved_repos
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                request_url,
+                headers=self.headers,
+            )
+            response.raise_for_status()
+
+            repos = [
+                Repos.from_dict(repo) for repo in response.json() if repo["size"] >= 100
+            ]
+
+            self.dao.save_user_repos(username, repos)
+
+            return await self._get_languages(repos)
