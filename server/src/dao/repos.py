@@ -26,13 +26,13 @@ class ReposDAO:
     def save_user_repos(self, username: str, repos: list[Repos]) -> None:
         self.table.put_item(
             Item={
-                "full_name": username,
+                "username": username,
                 "repos": [self._repo_to_dict(repo) for repo in repos],
             }
         )
 
     def get_user_repos(self, username: str) -> list[Repos]:
-        response = self.table.get_item(Key={"full_name": username})
         repos_data = response.get("Item", {}).get("repos", [])
+            response = self.table.get_item(Key={"username": username})
 
         return [Repos.from_dict(repo_dict) for repo_dict in repos_data]

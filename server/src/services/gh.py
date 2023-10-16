@@ -7,17 +7,19 @@ from src.models.repo import Repos
 
 
 class GitHubService:
-    def __init__(self):
+    def __init__(self, api_key: str):
+        self.api_key = api_key
         self.baseURL = "https://api.github.com"
         self.headers = {
             "Accept": "application/vnd.github.v3+json",
             "X-GitHub-Api-Version": "2022-11-28",
+            "Authorization": f"Bearer {self.api_key}",
         }
         self.dao = ReposDAO(os.environ.get("DYNAMO_TABLE_NAME", "default_table_name"))
 
     @staticmethod
-    def _get_repo_language_url(url: str, full_name: str) -> str:
-        return f"{url}/repos/{full_name}/languages"
+    def _get_repo_language_url(url: str, username: str) -> str:
+        return f"{url}/repos/{username}/languages"
 
     async def _get_languages(self, repos: list[Repos]) -> list[Repos]:
         async with httpx.AsyncClient() as client:

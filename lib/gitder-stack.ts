@@ -9,7 +9,7 @@ export class GitderStack extends cdk.Stack {
     super(scope, id, props);
 
     const table = new dynamodb.Table(this, "ReposTable", {
-      partitionKey: { name: "full_name", type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: "username", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
     });
 
