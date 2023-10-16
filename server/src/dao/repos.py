@@ -1,6 +1,7 @@
 from typing import Any
 
 import boto3
+from botocore.exceptions import ClientError
 from src.models.repo import Repos
 
 
@@ -31,8 +32,14 @@ class ReposDAO:
             }
         )
 
-    def get_user_repos(self, username: str) -> list[Repos]:
-        repos_data = response.get("Item", {}).get("repos", [])
+    def get_user_repos(self, username: str) -> list[Repos] | None:
+        try:
             response = self.table.get_item(Key={"username": username})
+            repos_data = response.get("Item", {}).get("repos", [])
 
-        return [Repos.from_dict(repo_dict) for repo_dict in repos_data]
+            return [Repos.from_dict(repo_dict) for repo_dict in repos_data]
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
+                return []
+
+            raise e
