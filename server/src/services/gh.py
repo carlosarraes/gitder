@@ -56,6 +56,8 @@ class GitHubService:
                 Repos.from_dict(repo) for repo in response.json() if repo["size"] >= 100
             ]
 
+            repos = await self._get_languages(repos)
+
             self.dao.save_user_repos(username, repos)
 
-            return await self._get_languages(repos)
+            return repos
